@@ -1,4 +1,4 @@
-package pro.sky.telegrambot.configuration;
+package pro.sky.telegrambot;
 
 import com.pengrad.telegrambot.TelegramBot;
 import org.junit.jupiter.api.Test;
@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import pro.sky.telegrambot.configuration.TelegramBotConfiguration;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 @ActiveProfiles("test")

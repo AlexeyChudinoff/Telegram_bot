@@ -39,7 +39,7 @@ class NotificationTaskServiceTest {
   void testParseAndSaveTaskValidFormat() {
     // Arrange
     Long chatId = 123L;
-    String validText = "25.12.2025 15:30 Поздравить маму";
+    String validText = "25.12.2125 15:30 Поздравить маму";
 
     // Act
     boolean result = notificationTaskService.parseAndSaveTask(chatId, validText);
