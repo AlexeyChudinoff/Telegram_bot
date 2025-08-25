@@ -8,11 +8,19 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.context.ActiveProfiles;
 import pro.sky.telegrambot.model.NotificationTask;
 import pro.sky.telegrambot.repository.NotificationTaskRepository;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import pro.sky.telegrambot.service.NotificationTaskService;
 
-
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+@ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
 class NotificationTaskServiceTest {
 
@@ -29,6 +37,7 @@ class NotificationTaskServiceTest {
   void testParseAndSaveTaskValidFormat() {
     // Arrange
     Long chatId = 123L;
+    String validText = "25.12.2024 15:30 Поздравить маму";
 
     // Act
     boolean result = notificationTaskService.parseAndSaveTask(chatId, validText);
@@ -55,6 +64,7 @@ class NotificationTaskServiceTest {
   @Test
   void testCheckNotifications() {
     // Arrange
+    LocalDateTime now = LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.MINUTES);
     NotificationTask task1 = new NotificationTask();
     task1.setChatId(123L);
     task1.setMessage("Тестовое напоминание 1");
@@ -67,6 +77,7 @@ class NotificationTaskServiceTest {
 
     List<NotificationTask> tasks = Arrays.asList(task1, task2);
 
+    when(notificationTaskRepository.findByNotificationDateTime(now))
         .thenReturn(tasks);
 
     // Act

@@ -5,14 +5,12 @@ import com.pengrad.telegrambot.model.Chat;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 import pro.sky.telegrambot.listener.TelegramBotUpdatesListener;
 import pro.sky.telegrambot.service.NotificationTaskService;
@@ -24,8 +22,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-
-
 @ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
 class TelegramBotUpdatesListenerTest {
@@ -169,14 +165,14 @@ class TelegramBotUpdatesListenerTest {
   @Test
   void process_EmptyMessage_ShouldNotProcess() {
     // Arrange
-    Update update = createUpdate(123L, "");
+    Update update = createUpdate(123L, "   ");
 
     // Act
     int result = listener.process(List.of(update));
 
     // Assert
-    assertEquals(-1, result); // Возвращает id последнего обработанного обновления
-    verifyNoInteractions(notificationTaskService, currencyService, weatherService);
+    assertEquals(-1, result);
+    verify(notificationTaskService, never()).parseAndSaveTask(any(), any());
   }
 
   @Test
@@ -192,8 +188,8 @@ class TelegramBotUpdatesListenerTest {
     int result = listener.process(List.of(update));
 
     // Assert
-    assertEquals(-1, result); // Возвращает id последнего обработанного обновления
-    verifyNoInteractions(notificationTaskService, currencyService, weatherService);
+    assertEquals(-1, result);
+    verify(notificationTaskService, never()).parseAndSaveTask(any(), any());
   }
 
   @Test

@@ -5,10 +5,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestTemplate;
 import pro.sky.telegrambot.service.CurrencyService;
 
-
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+@ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
 class CurrencyServiceTest {
 
@@ -56,16 +61,16 @@ class CurrencyServiceTest {
   void testGetUsdRateSuccess() {
     // Arrange
     String mockXmlResponse = """
-        <ValCurs Date="21.08.2025" name="Foreign Currency Market">
-            <Valute ID="R01235">
-                <NumCode>840</NumCode>
-                <CharCode>USD</CharCode>
-                <Nominal>1</Nominal>
-                <Name>Доллар США</Name>
-                <Value>75,50</Value>
-            </Valute>
-        </ValCurs>
-        """;
+            <ValCurs Date="21.08.2025" name="Foreign Currency Market">
+                <Valute ID="R01235">
+                    <NumCode>840</NumCode>
+                    <CharCode>USD</CharCode>
+                    <Nominal>1</Nominal>
+                    <Name>Доллар США</Name>
+                    <Value>75,50</Value>
+                </Valute>
+            </ValCurs>
+            """;
 
     when(restTemplate.getForObject(anyString(), eq(String.class)))
         .thenReturn(mockXmlResponse);

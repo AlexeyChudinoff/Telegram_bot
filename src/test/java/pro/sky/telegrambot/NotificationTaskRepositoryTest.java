@@ -3,7 +3,7 @@ package pro.sky.telegrambot;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.core.env.Environment; // Правильный импорт!
+import org.springframework.core.env.Environment;
 import org.springframework.test.context.ActiveProfiles;
 import pro.sky.telegrambot.model.NotificationTask;
 
@@ -21,15 +21,15 @@ class NotificationTaskRepositoryTest {
   @Autowired
   private Environment environment;
 
+  @Autowired
+  private NotificationTaskRepository repository;
+
   @Test
   void testProfile() {
     String[] activeProfiles = environment.getActiveProfiles();
     assertTrue(Arrays.asList(activeProfiles).contains("test"));
     System.out.println("Active profiles: " + Arrays.toString(activeProfiles));
   }
-
-  @Autowired
-  private NotificationTaskRepository repository;
 
   @Test
   void testFindByNotificationDateTimeAndSentFalse() {
@@ -61,7 +61,7 @@ class NotificationTaskRepositoryTest {
     int deletedCount = repository.deleteBySentTrueAndSentDateTimeBefore(oldDate);
 
     // Assert
-    assertEquals(0, deletedCount); // В пустой БД должно быть 0 удалений
+    assertEquals(0, deletedCount);
   }
 
   @Test
@@ -73,6 +73,6 @@ class NotificationTaskRepositoryTest {
     int deletedCount = repository.deleteBySentFalseAndNotificationDateTimeBefore(oldDate);
 
     // Assert
-    assertEquals(0, deletedCount); // В пустой БД должно быть 0 удалений
+    assertEquals(0, deletedCount);
   }
 }
