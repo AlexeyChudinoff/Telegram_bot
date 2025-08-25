@@ -40,7 +40,6 @@ public class CurrencyService {
       factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
 
       DocumentBuilder builder = factory.newDocumentBuilder();
-      String cleanedXml = xmlResponse.trim().replace("\uFEFF", "");
       Document doc = builder.parse(new InputSource(new StringReader(cleanedXml)));
 
       NodeList valutes = doc.getElementsByTagName("Valute");
@@ -59,7 +58,6 @@ public class CurrencyService {
         }
       }
 
-      return "❌ Не удалось найти курс доллара";
 
     } catch (Exception e) {
       return "❌ Ошибка при получении курса: " + e.getClass().getSimpleName();

@@ -1,20 +1,13 @@
-package pro.sky.telegrambot;
-
 import com.pengrad.telegrambot.TelegramBot;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import pro.sky.telegrambot.configuration.TelegramBotConfiguration;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-
-@ActiveProfiles("test")
 @ExtendWith(SpringExtension.class)
 @TestPropertySource(properties = "telegram.bot.token=test:token")
 class TelegramBotConfigurationTest {

@@ -14,8 +14,6 @@ public class NotificationTask {
   private Long chatId;
   private String message;
   private LocalDateTime notificationDateTime;
-  private boolean sent = false; // Флаг отправки
-  private LocalDateTime sentDateTime; // Когда было отправлено
 
 
   public Long getId() {
@@ -49,10 +47,4 @@ public class NotificationTask {
   public void setNotificationDateTime(LocalDateTime notificationDateTime) {
     this.notificationDateTime = notificationDateTime;
   }
-
-  public boolean isSent() { return sent; }
-  public void setSent(boolean sent) { this.sent = sent; }
-  public LocalDateTime getSentDateTime() { return sentDateTime; }
-  public void setSentDateTime(LocalDateTime sentDateTime) { this.sentDateTime = sentDateTime; }
-
 }

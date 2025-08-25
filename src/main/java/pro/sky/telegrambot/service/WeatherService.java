@@ -10,18 +10,13 @@ public class WeatherService {
 
   private final RestTemplate restTemplate;
   private final ObjectMapper objectMapper;
-  private final ApiService apiService;
 
-  public WeatherService(RestTemplate restTemplate, ObjectMapper objectMapper, ApiService apiService) {
     this.restTemplate = restTemplate;
     this.objectMapper = objectMapper;
-    this.apiService = apiService;
   }
 
   public String getTomskWeather() {
     try {
-      String url = "https://api.openweathermap.org/data/2.5/weather?q=Tomsk,RU" +
-          "&appid=" + apiService.getApiKey() + "&units=metric&lang=ru";
 
       String jsonResponse = restTemplate.getForObject(url, String.class);
       JsonNode json = objectMapper.readTree(jsonResponse);
@@ -40,12 +35,10 @@ public class WeatherService {
       return "🌤️ Погода в Томске:\n\n" +
           "🌡️ Температура: " + temp + "°C\n" +
           "💨 Ощущается как: " + feelsLike + "°C\n" +
-          "🌬️ Ветер: " + getWindDirection(windDeg) + " " + windSpeed + " м/с\n" +
           "💧 Влажность: " + humidity + "%\n" +
           "📝 " + capitalizeFirstLetter(description);
 
     } catch (Exception e) {
-      return "❌ Не удалось получить погоду";
     }
   }
 
