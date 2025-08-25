@@ -30,6 +30,7 @@ public class NotificationTaskService {
     notificationTask.setChatId(chatId);
     notificationTask.setMessage(message);
     notificationTask.setNotificationDateTime(notificationDateTime);
+    notificationTask.setSent(false);
     notificationTaskRepository.save(notificationTask);
   }
 
@@ -45,9 +46,23 @@ public class NotificationTaskService {
           .disableWebPagePreview(true);
       telegramBot.execute(sendMessage);
 
-      // Удаляем отправленное напоминание
-      notificationTaskRepository.delete(task);
+      // Помечаем как отправленное и сохраняем время отправки
+      task.setSent(true);
+      task.setSentDateTime(LocalDateTime.now());
+      notificationTaskRepository.save(task);
     }
+  }
+
+  //для очистки старых напоминаний
+  @Scheduled(cron = "0 0 3 * * *") // Каждый день в 3:00
+  public void cleanupOldNotifications() {
+    LocalDateTime twentyFourHoursAgo = LocalDateTime.now().minusHours(24);
+
+    // Удаляем отправленные напоминания старше 24 часов
+    notificationTaskRepository.deleteBySentTrueAndSentDateTimeBefore(twentyFourHoursAgo);
+
+    // Удаляем неотправленные напоминания из прошлого
+    notificationTaskRepository.deleteBySentFalseAndNotificationDateTimeBefore(LocalDateTime.now());
   }
 
   public boolean parseAndSaveTask(Long chatId, String text) {

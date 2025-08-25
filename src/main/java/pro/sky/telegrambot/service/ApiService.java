@@ -9,7 +9,11 @@ public class ApiService {
   @Value("${openweather.api.key}")
   private String apiKey;
 
-  public String getApiKey() {
+  public String getApiKey(){
+    if (apiKey == null || apiKey.isEmpty()) {
+      throw new IllegalStateException("OpenWeather API key not configured");
+    }
     return apiKey;
   }
+
 }
