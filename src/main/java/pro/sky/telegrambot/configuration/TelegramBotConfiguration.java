@@ -1,5 +1,6 @@
 package pro.sky.telegrambot.configuration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.DeleteMyCommands;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +18,11 @@ public class TelegramBotConfiguration {
         TelegramBot bot = new TelegramBot(token);
         bot.execute(new DeleteMyCommands()); // Очистка старых команд
         return bot;
+    }
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
     }
 
 }

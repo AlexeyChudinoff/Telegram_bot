@@ -10,16 +10,31 @@ public class WeatherService {
 
   private final RestTemplate restTemplate;
   private final ObjectMapper objectMapper;
+  private final ApiService apiService;
 
+  public WeatherService(RestTemplate restTemplate, ObjectMapper objectMapper, ApiService apiService) {
     this.restTemplate = restTemplate;
     this.objectMapper = objectMapper;
+    this.apiService = apiService;
   }
 
   public String getTomskWeather() {
     try {
+      String apiKey = apiService.getApiKey();
+      String url = "https://api.openweathermap.org/data/2.5/weather?q=Tomsk&units=metric&lang=ru&appid=" + apiKey;
 
       String jsonResponse = restTemplate.getForObject(url, String.class);
+
+      if (jsonResponse == null) {
+        return "❌ Не удалось получить данные о погоде";
+      }
+
       JsonNode json = objectMapper.readTree(jsonResponse);
+
+      // Проверяем наличие необходимых полей в ответе
+      if (!json.has("main") || !json.has("wind") || !json.has("weather")) {
+        return "❌ Неверный формат ответа от сервера погоды";
+      }
 
       JsonNode main = json.get("main");
       JsonNode wind = json.get("wind");
@@ -32,23 +47,30 @@ public class WeatherService {
       int windDeg = wind.has("deg") ? wind.get("deg").asInt() : 0;
       String description = weather.get("description").asText();
 
+      // Формируем направление ветра
+      String windDirection = getWindDirection(windDeg);
+
       return "🌤️ Погода в Томске:\n\n" +
-          "🌡️ Температура: " + temp + "°C\n" +
-          "💨 Ощущается как: " + feelsLike + "°C\n" +
+          "🌡️ Температура: " + Math.round(temp) + "°C\n" +
+          "💨 Ощущается как: " + Math.round(feelsLike) + "°C\n" +
           "💧 Влажность: " + humidity + "%\n" +
+          "🌬️ Ветер: " + windSpeed + " м/с, " + windDirection + "\n" +
           "📝 " + capitalizeFirstLetter(description);
 
     } catch (Exception e) {
+      return "❌ Ошибка при получении погоды: " + e.getClass().getSimpleName();
     }
   }
 
-  public String getWindDirection(int degrees) {
+  // Вспомогательный метод для определения направления ветра
+  private String getWindDirection(int degrees) {
     String[] directions = {"⬆️ С", "↗️ СВ", "➡️ В", "↘️ ЮВ", "⬇️ Ю", "↙️ ЮЗ", "⬅️ З", "↖️ СЗ"};
     int index = (int) ((degrees + 22.5) % 360 / 45);
-    return directions[index];
+    return directions[index % directions.length];
   }
 
-  public String capitalizeFirstLetter(String text) {
+  // Вспомогательный метод для капитализации первой буквы
+  private String capitalizeFirstLetter(String text) {
     if (text == null || text.isEmpty()) {
       return text;
     }

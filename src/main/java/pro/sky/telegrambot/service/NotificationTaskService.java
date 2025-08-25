@@ -1,5 +1,7 @@
 package pro.sky.telegrambot.service;
 
+import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.request.SendMessage;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import pro.sky.telegrambot.model.NotificationTask;
@@ -17,6 +19,8 @@ public class NotificationTaskService {
   private final NotificationTaskRepository notificationTaskRepository;
   private final TelegramBot telegramBot;
 
+  public NotificationTaskService(NotificationTaskRepository notificationTaskRepository,
+      TelegramBot telegramBot) {
     this.notificationTaskRepository = notificationTaskRepository;
     this.telegramBot = telegramBot;
   }
@@ -29,14 +33,20 @@ public class NotificationTaskService {
     notificationTaskRepository.save(notificationTask);
   }
 
-  @Scheduled(cron = "0 * * * * *")
+  @Scheduled(cron = "0 * * * * *") // Проверка каждую минуту
   public void checkNotifications() {
-      LocalDateTime currentDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
+    LocalDateTime currentDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
 
-      for (NotificationTask task : tasks) {
-          SendMessage sendMessage = new SendMessage(task.getChatId(), "🔔 " + task.getMessage())
-              .disableWebPagePreview(true);
+    List<NotificationTask> tasks = notificationTaskRepository
+        .findByNotificationDateTime(currentDateTime);
 
+    for (NotificationTask task : tasks) {
+      SendMessage sendMessage = new SendMessage(task.getChatId(), "🔔 Напоминание:\n" + task.getMessage())
+          .disableWebPagePreview(true);
+      telegramBot.execute(sendMessage);
+
+      // Удаляем отправленное напоминание
+      notificationTaskRepository.delete(task);
     }
   }
 
@@ -49,10 +59,16 @@ public class NotificationTaskService {
       String message = matcher.group(2);
 
       DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
-        LocalDateTime dateTime = LocalDateTime.parse(dateTimeString, formatter);
+      LocalDateTime dateTime = LocalDateTime.parse(dateTimeString, formatter);
 
-        saveNotificationTask(chatId, message, dateTime);
-        return true;
+      // Проверяем, что дата не в прошлом
+      if (dateTime.isBefore(LocalDateTime.now())) {
+        return false;
+      }
+
+      saveNotificationTask(chatId, message, dateTime);
+      return true;
     }
     return false;
   }
+}

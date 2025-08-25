@@ -34,6 +34,9 @@ public class CurrencyService {
         return "❌ Пустой ответ от сервера ЦБ РФ";
       }
 
+      // Удаляем DTD ссылку чтобы избежать ошибок парсинга
+      String cleanedXml = xmlResponse.replaceAll("<!DOCTYPE[^>]*>", "");
+
       DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
       factory.setValidating(false);
       factory.setNamespaceAware(true);
@@ -58,6 +61,7 @@ public class CurrencyService {
         }
       }
 
+      return "❌ Не удалось найти курс доллара в ответе ЦБ РФ";
 
     } catch (Exception e) {
       return "❌ Ошибка при получении курса: " + e.getClass().getSimpleName();

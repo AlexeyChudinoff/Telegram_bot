@@ -19,6 +19,7 @@ import java.util.List;
 @Service
 public class TelegramBotUpdatesListener implements UpdatesListener {
 
+  private final Logger logger = LoggerFactory.getLogger(TelegramBotUpdatesListener.class);
   private final TelegramBot telegramBot;
   private final NotificationTaskService notificationTaskService;
   private final CurrencyService currencyService;
@@ -34,28 +35,56 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     this.weatherService = weatherService;
   }
 
+  @PostConstruct
+  public void init() {
+    telegramBot.setUpdatesListener(this);
+  }
+
   private Keyboard createMainKeyboard() {
     return new ReplyKeyboardMarkup(
         new String[]{"⏰ Напоминание"},
         new String[]{"💵 Курс доллара"},
         new String[]{"🌤️ Погода в Томске"}
+    ).resizeKeyboard(true);
   }
 
   @Override
   public int process(List<Update> updates) {
     updates.forEach(update -> {
-
       if (update.message() != null && update.message().text() != null) {
         Long chatId = update.message().chat().id();
+        String text = update.message().text();
 
+        switch (text) {
+          case "⏰ Напоминание":
+            sendMessage(chatId, "Введите напоминание в формате: dd.MM.yyyy HH:mm Текст напоминания");
+            break;
+          case "💵 Курс доллара":
+            String currencyRate = currencyService.getUsdRate();
+            sendMessage(chatId, currencyRate);
+            break;
+          case "🌤️ Погода в Томске":
+            String weather = weatherService.getTomskWeather();
+            sendMessage(chatId, weather);
+            break;
+          default:
+            if (notificationTaskService.parseAndSaveTask(chatId, text)) {
+              sendMessage(chatId, "Напоминание успешно сохранено!");
+            } else {
+              SendMessage message = new SendMessage(chatId, "Добро пожаловать! Выберите действие:")
+                  .replyMarkup(createMainKeyboard());
+              telegramBot.execute(message);
+            }
+            break;
+        }
+      }
+    });
+    return UpdatesListener.CONFIRMED_UPDATES_ALL;
+  }
 
-                .replyMarkup(createMainKeyboard());
-
+  private void sendMessage(Long chatId, String text) {
+    SendMessage message = new SendMessage(chatId, text)
+        .replyMarkup(createMainKeyboard());
     telegramBot.execute(message);
-
-    if (notificationTaskService.parseAndSaveTask(chatId, text)) {
-    } else {
-          "dd.MM.yyyy HH:mm Текст\n\n" +
-    }
   }
 }
