@@ -2,6 +2,8 @@ package pro.sky.telegrambot;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.request.SendMessage;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -37,13 +39,13 @@ class NotificationTaskServiceTest {
   void testParseAndSaveTaskValidFormat() {
     // Arrange
     Long chatId = 123L;
-    String validText = "25.12.2024 15:30 Поздравить маму";
+    String validText = "25.12.2025 15:30 Поздравить маму";
 
     // Act
     boolean result = notificationTaskService.parseAndSaveTask(chatId, validText);
 
     // Assert
-    assertTrue(result);
+    assertTrue(result, "Парсинг должен быть успешным для: " + validText);
     verify(notificationTaskRepository, times(1)).save(any(NotificationTask.class));
   }
 

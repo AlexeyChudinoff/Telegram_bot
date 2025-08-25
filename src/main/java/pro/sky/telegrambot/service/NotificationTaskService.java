@@ -66,18 +66,28 @@ public class NotificationTaskService {
   }
 
   public boolean parseAndSaveTask(Long chatId, String text) {
+    String trimmedText = text.trim();
     Pattern pattern = Pattern.compile("(\\d{2}\\.\\d{2}\\.\\d{4} \\d{2}:\\d{2}) (.+)");
-    Matcher matcher = pattern.matcher(text);
+    Matcher matcher = pattern.matcher(trimmedText);
 
-    if (matcher.matches()) {
+    // отладка, в тесте дублировался matcher
+    System.out.println("Text for parsing: '" + trimmedText + "'");
+    boolean matches = matcher.matches();
+    System.out.println("Service matches: " + matches);
+
+    if (matches) {
       String dateTimeString = matcher.group(1);
       String message = matcher.group(2);
+      System.out.println("Parsed datetime: " + dateTimeString);
+      System.out.println("Parsed message: " + message);
 
       DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
       LocalDateTime dateTime = LocalDateTime.parse(dateTimeString, formatter);
+      System.out.println("Parsed LocalDateTime: " + dateTime);
 
       // Проверяем, что дата не в прошлом
       if (dateTime.isBefore(LocalDateTime.now())) {
+        System.out.println("Date is in the past!");
         return false;
       }
 
