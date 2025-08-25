@@ -12,7 +12,10 @@ public class WeatherService {
   private final ObjectMapper objectMapper;
   private final ApiService apiService;
 
-  public WeatherService(RestTemplate restTemplate, ObjectMapper objectMapper, ApiService apiService) {
+  public WeatherService(
+      RestTemplate restTemplate,
+      ObjectMapper objectMapper,
+      ApiService apiService) {
     this.restTemplate = restTemplate;
     this.objectMapper = objectMapper;
     this.apiService = apiService;
