@@ -13,7 +13,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
-@ActiveProfiles("test")
+
+@ActiveProfiles("test") // ✅ Оставляем для интеграционных тестов
 @ExtendWith(MockitoExtension.class)
 class CurrencyServiceTest {
 
@@ -24,53 +25,18 @@ class CurrencyServiceTest {
   private CurrencyService currencyService;
 
   @Test
-  void testGetUsdRateDebug() {
-    // Arrange
-    String mockXmlResponse = """
-        <ValCurs Date="21.08.2025" name="Foreign Currency Market">
-            <Valute ID="R01235">
-                <NumCode>840</NumCode>
-                <CharCode>USD</CharCode>
-                <Nominal>1</Nominal>
-                <Name>Доллар США</Name>
-                <Value>75,50</Value>
-            </Valute>
-        </ValCurs>
-        """;
-
-    when(restTemplate.getForObject(anyString(), eq(String.class)))
-        .thenReturn(mockXmlResponse);
-
-    // Act
-    String result = currencyService.getUsdRate();
-
-    // Debug output
-    System.out.println("=== DEBUG OUTPUT ===");
-    System.out.println("Result: " + result);
-    System.out.println("Contains 'Доллар США': " + result.contains("Доллар США"));
-    System.out.println("Contains '75,50': " + result.contains("75,50"));
-    System.out.println("Contains 'Курс доллара': " + result.contains("Курс доллара"));
-    System.out.println("====================");
-
-    // Assert
-    assertNotNull(result);
-    assertFalse(result.isEmpty());
-  }
-
-  @Test
   void testGetUsdRateSuccess() {
     // Arrange
-    String mockXmlResponse = """
-            <ValCurs Date="21.08.2025" name="Foreign Currency Market">
-                <Valute ID="R01235">
-                    <NumCode>840</NumCode>
-                    <CharCode>USD</CharCode>
-                    <Nominal>1</Nominal>
-                    <Name>Доллар США</Name>
-                    <Value>75,50</Value>
-                </Valute>
-            </ValCurs>
-            """;
+    String mockXmlResponse = "<?xml version=\"1.0\" encoding=\"windows-1251\"?>" +
+        "<ValCurs Date=\"21.08.2025\" name=\"Foreign Currency Market\">" +
+        "<Valute ID=\"R01235\">" +
+        "<NumCode>840</NumCode>" +
+        "<CharCode>USD</CharCode>" +
+        "<Nominal>1</Nominal>" +
+        "<Name>Доллар США</Name>" +
+        "<Value>75,50</Value>" +
+        "</Valute>" +
+        "</ValCurs>";
 
     when(restTemplate.getForObject(anyString(), eq(String.class)))
         .thenReturn(mockXmlResponse);
@@ -87,8 +53,8 @@ class CurrencyServiceTest {
 
   @Test
   void testGetUsdRateWhenUsdNotFound() {
-    // Arrange - валидный XML без USD
-    String validXmlWithoutUsd = "<?xml version=\"1.0\" encoding=\"windows-1251\"?>" +
+    // Arrange
+    String xmlWithoutUsd = "<?xml version=\"1.0\" encoding=\"windows-1251\"?>" +
         "<ValCurs Date=\"21.08.2025\" name=\"Foreign Currency Market\">" +
         "<Valute ID=\"R01239\">" +
         "<NumCode>978</NumCode>" +
@@ -100,21 +66,28 @@ class CurrencyServiceTest {
         "</ValCurs>";
 
     when(restTemplate.getForObject(anyString(), eq(String.class)))
-        .thenReturn(validXmlWithoutUsd);
+        .thenReturn(xmlWithoutUsd);
 
     // Act
     String result = currencyService.getUsdRate();
 
-    // Отладочный вывод
-    System.out.println("=== DEBUG ===");
-    System.out.println("Expected to contain: 'Не удалось найти курс доллара'");
-    System.out.println("Actual result: '" + result + "'");
-    System.out.println("Contains expected: " + result.contains("Не удалось найти курс доллара"));
-    System.out.println("=============");
-
     // Assert
     assertNotNull(result);
     assertTrue(result.contains("Не удалось найти курс доллара"));
+  }
+
+  @Test
+  void testGetUsdRateWhenEmptyResponse() {
+    // Arrange
+    when(restTemplate.getForObject(anyString(), eq(String.class)))
+        .thenReturn("");
+
+    // Act
+    String result = currencyService.getUsdRate();
+
+    // Assert
+    assertNotNull(result);
+    assertTrue(result.contains("Пустой ответ от сервера ЦБ РФ"));
   }
 
   @Test
@@ -130,30 +103,4 @@ class CurrencyServiceTest {
     assertNotNull(result);
     assertTrue(result.contains("Ошибка при получении курса"));
   }
-
-  @Test
-  void testGetUsdRateWhenValidXmlButNoUsd() {
-    // Arrange - валидный XML без USD
-    String validXmlWithoutUsd = "<?xml version=\"1.0\" encoding=\"windows-1251\"?>" +
-        "<ValCurs Date=\"21.08.2025\" name=\"Foreign Currency Market\">" +
-        "<Valute ID=\"R01239\">" +
-        "<NumCode>978</NumCode>" +
-        "<CharCode>EUR</CharCode>" +
-        "<Nominal>1</Nominal>" +
-        "<Name>Евро</Name>" +
-        "<Value>85,00</Value>" +
-        "</Valute>" +
-        "</ValCurs>";
-
-    when(restTemplate.getForObject(anyString(), eq(String.class)))
-        .thenReturn(validXmlWithoutUsd);
-
-    // Act
-    String result = currencyService.getUsdRate();
-
-    // Assert
-    assertNotNull(result);
-    assertTrue(result.contains("Не удалось найти курс доллара"));
-  }
-
 }

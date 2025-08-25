@@ -51,6 +51,11 @@ public class NotificationTask {
     return sent;
   }
 
+  // Метод для boolean (удобнее для проверок)
+  public boolean isSent() {
+    return Boolean.TRUE.equals(sent);
+  }
+
   public void setSent(Boolean sent) {
     this.sent = sent;
   }

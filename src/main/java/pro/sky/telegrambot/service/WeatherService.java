@@ -66,14 +66,14 @@ public class WeatherService {
   }
 
   // Вспомогательный метод для определения направления ветра
-  private String getWindDirection(int degrees) {
+  public String getWindDirection(int degrees) {
     String[] directions = {"⬆️ С", "↗️ СВ", "➡️ В", "↘️ ЮВ", "⬇️ Ю", "↙️ ЮЗ", "⬅️ З", "↖️ СЗ"};
     int index = (int) ((degrees + 22.5) % 360 / 45);
     return directions[index % directions.length];
   }
 
   // Вспомогательный метод для капитализации первой буквы
-  private String capitalizeFirstLetter(String text) {
+  public String capitalizeFirstLetter(String text) {
     if (text == null || text.isEmpty()) {
       return text;
     }
