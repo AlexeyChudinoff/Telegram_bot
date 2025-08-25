@@ -34,13 +34,15 @@ public class CurrencyService {
         return "❌ Пустой ответ от сервера ЦБ РФ";
       }
 
+      // Удаляем DTD ссылку чтобы избежать ошибок парсинга
+      String cleanedXml = xmlResponse.replaceAll("<!DOCTYPE[^>]*>", "");
+
       DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
       factory.setValidating(false);
       factory.setNamespaceAware(true);
       factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
 
       DocumentBuilder builder = factory.newDocumentBuilder();
-      String cleanedXml = xmlResponse.trim().replace("\uFEFF", "");
       Document doc = builder.parse(new InputSource(new StringReader(cleanedXml)));
 
       NodeList valutes = doc.getElementsByTagName("Valute");
@@ -59,7 +61,7 @@ public class CurrencyService {
         }
       }
 
-      return "❌ Не удалось найти курс доллара";
+      return "❌ Не удалось найти курс доллара в ответе ЦБ РФ";
 
     } catch (Exception e) {
       return "❌ Ошибка при получении курса: " + e.getClass().getSimpleName();

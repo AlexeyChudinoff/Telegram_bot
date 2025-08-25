@@ -12,16 +12,15 @@ import java.util.List;
 
 public interface NotificationTaskRepository extends JpaRepository<NotificationTask, Long> {
 
-  // Используется в checkNotifications для поиска неотправленных уведомлений
+  List<NotificationTask> findByNotificationDateTime(LocalDateTime notificationDateTime); // ДОБАВЛЕНО
+
   List<NotificationTask> findByNotificationDateTimeAndSentFalse(LocalDateTime notificationDateTime);
 
-  // Используется в cleanupOldNotifications для удаления отправленных уведомлений
   @Transactional
   @Modifying
   @Query("DELETE FROM NotificationTask n WHERE n.sent = true AND n.sentDateTime < :dateTime")
   int deleteBySentTrueAndSentDateTimeBefore(@Param("dateTime") LocalDateTime dateTime);
 
-  // Используется в cleanupOldNotifications для удаления старых неотправленных уведомлений
   @Transactional
   @Modifying
   @Query("DELETE FROM NotificationTask n WHERE n.sent = false AND n.notificationDateTime < :dateTime")

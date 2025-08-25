@@ -1,9 +1,6 @@
 package pro.sky.telegrambot.model;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,8 +11,8 @@ public class NotificationTask {
   private Long chatId;
   private String message;
   private LocalDateTime notificationDateTime;
-  private boolean sent = false; // Флаг отправки
-  private LocalDateTime sentDateTime; // Когда было отправлено
+  private Boolean sent = false; // ДОБАВЛЕНО
+  private LocalDateTime sentDateTime; // ДОБАВЛЕНО
 
 
   public Long getId() {
@@ -50,9 +47,19 @@ public class NotificationTask {
     this.notificationDateTime = notificationDateTime;
   }
 
-  public boolean isSent() { return sent; }
-  public void setSent(boolean sent) { this.sent = sent; }
-  public LocalDateTime getSentDateTime() { return sentDateTime; }
-  public void setSentDateTime(LocalDateTime sentDateTime) { this.sentDateTime = sentDateTime; }
+  public Boolean getSent() {
+    return sent;
+  }
 
+  public void setSent(Boolean sent) {
+    this.sent = sent;
+  }
+
+  public LocalDateTime getSentDateTime() {
+    return sentDateTime;
+  }
+
+  public void setSentDateTime(LocalDateTime sentDateTime) {
+    this.sentDateTime = sentDateTime;
+  }
 }

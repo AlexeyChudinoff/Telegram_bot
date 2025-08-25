@@ -14,7 +14,6 @@ import pro.sky.telegrambot.service.CurrencyService;
 import pro.sky.telegrambot.service.WeatherService;
 
 import javax.annotation.PostConstruct;
-
 import java.util.List;
 
 @Service
@@ -34,62 +33,49 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     this.notificationTaskService = notificationTaskService;
     this.currencyService = currencyService;
     this.weatherService = weatherService;
-    // Инициализация в конструкторе
-    this.telegramBot.setUpdatesListener(this);
-    logger.info("Telegram bot initialized with token: {}",
-        telegramBot.getToken() != null ? "SET" : "NOT SET");
   }
-// перенес в конструктор
-//  @PostConstruct
-//  public void init() {
-//    telegramBot.setUpdatesListener(this);
-//    logger.info("Telegram bot initialized with token: {}",
-//        telegramBot.getToken() != null ? "SET" : "NOT SET");
-//  }
+
+  @PostConstruct
+  public void init() {
+    telegramBot.setUpdatesListener(this);
+  }
 
   private Keyboard createMainKeyboard() {
     return new ReplyKeyboardMarkup(
         new String[]{"⏰ Напоминание"},
         new String[]{"💵 Курс доллара"},
         new String[]{"🌤️ Погода в Томске"}
-    ).resizeKeyboard(true).oneTimeKeyboard(false).selective(true);
+    ).resizeKeyboard(true);
   }
 
   @Override
   public int process(List<Update> updates) {
     updates.forEach(update -> {
-      logger.info("Процесс запущен: {}", update);
-
       if (update.message() != null && update.message().text() != null) {
         Long chatId = update.message().chat().id();
-        String text = update.message().text().trim();
+        String text = update.message().text();
 
-        if (text.isEmpty()) {
-          logger.debug("Skipping empty message from chatId: {}", chatId);
-          return;
-        }
-
-        switch (text.toLowerCase()) {
-          case "/start":
-            SendMessage welcomeMessage = new SendMessage(chatId,
-                "Привет! Я умный бот. Выбери что тебя интересует: " +
-                    "установить напоминание, узнать курс доллара или погоду в Томске.")
-                .replyMarkup(createMainKeyboard());
-            telegramBot.execute(welcomeMessage);
+        switch (text) {
+          case "⏰ Напоминание":
+            sendMessage(chatId, "Введите напоминание в формате: dd.MM.yyyy HH:mm Текст напоминания");
             break;
-          case "⏰ напоминание":
-            sendMessage(chatId, "Отправь мне напоминание в формате:\n"
-                + "dd.MM.yyyy HH:mm Текст напоминания\n\n"
-                + "Пример: 25.12.2025 15:30 Поздравить маму с днем рождения");
+          case "💵 Курс доллара":
+            String currencyRate = currencyService.getUsdRate();
+            sendMessage(chatId, currencyRate);
             break;
-          case "💵 курс доллара":
-            sendMessage(chatId, currencyService.getUsdRate());
-            break;
-          case "🌤️ погода в томске":
-            sendMessage(chatId, weatherService.getTomskWeather());
+          case "🌤️ Погода в Томске":
+            String weather = weatherService.getTomskWeather();
+            sendMessage(chatId, weather);
             break;
           default:
-            handleDefaultMessage(chatId, text);
+            if (notificationTaskService.parseAndSaveTask(chatId, text)) {
+              sendMessage(chatId, "Напоминание успешно сохранено!");
+            } else {
+              SendMessage message = new SendMessage(chatId, "Добро пожаловать! Выберите действие:")
+                  .replyMarkup(createMainKeyboard());
+              telegramBot.execute(message);
+            }
+            break;
         }
       }
     });
@@ -98,18 +84,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
   private void sendMessage(Long chatId, String text) {
     SendMessage message = new SendMessage(chatId, text)
-        .replyMarkup(createMainKeyboard()); // Добавляем клавиатуру ко всем сообщениям
+        .replyMarkup(createMainKeyboard());
     telegramBot.execute(message);
-  }
-
-  private void handleDefaultMessage(Long chatId, String text) {
-    if (notificationTaskService.parseAndSaveTask(chatId, text)) {
-      sendMessage(chatId, "✅ Напоминание успешно запланировано!");
-    } else {
-      sendMessage(chatId, "❌ Неверный формат или дата. Используй:\n" +
-          "dd.MM.yyyy HH:mm Текст\n\n" +
-          "Пример: 25.12.2025 15:30 Поздравить маму\n\n" +
-          "Убедись что дата корректна и в будущем!");
-    }
   }
 }

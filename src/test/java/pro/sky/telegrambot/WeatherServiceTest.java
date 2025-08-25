@@ -7,10 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestTemplate;
-import pro.sky.telegrambot.service.ApiService;
 import pro.sky.telegrambot.service.WeatherService;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,8 +15,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-
-@ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
 class WeatherServiceTest {
 
@@ -28,9 +23,6 @@ class WeatherServiceTest {
 
   @Mock
   private ObjectMapper objectMapper;
-
-  @Mock
-  private ApiService apiService;
 
   @InjectMocks
   private WeatherService weatherService;
@@ -89,7 +81,6 @@ class WeatherServiceTest {
   @Test
   void testCapitalizeFirstLetter() {
     // Arrange
-    WeatherService service = new WeatherService(restTemplate, new ObjectMapper(),apiService);
 
     // Act & Assert
     assertEquals("Ясно", service.capitalizeFirstLetter("ясно"));
@@ -101,7 +92,6 @@ class WeatherServiceTest {
   @Test
   void testGetWindDirection() {
     // Arrange
-    WeatherService service = new WeatherService(restTemplate, new ObjectMapper(),apiService);
 
     // Act & Assert
     assertEquals("⬆️ С", service.getWindDirection(0));
