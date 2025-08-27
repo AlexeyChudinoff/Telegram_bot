@@ -40,7 +40,6 @@
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- ДОБАВЬТЕ ЭТУ ЗАВИСИМОСТЬ ДЛЯ ТЕСТОВ -->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
