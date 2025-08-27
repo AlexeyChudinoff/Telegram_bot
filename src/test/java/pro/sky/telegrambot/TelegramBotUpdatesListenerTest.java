@@ -14,6 +14,7 @@ import com.pengrad.telegrambot.model.Chat;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +26,7 @@ import org.springframework.test.context.ActiveProfiles;
 import pro.sky.telegrambot.listener.TelegramBotUpdatesListener;
 import pro.sky.telegrambot.service.CurrencyService;
 import pro.sky.telegrambot.service.NotificationTaskService;
+import pro.sky.telegrambot.service.ReminderParserService;
 import pro.sky.telegrambot.service.WeatherService;
 
 @ActiveProfiles("test")
@@ -42,6 +44,9 @@ class TelegramBotUpdatesListenerTest {
 
   @Mock
   private WeatherService weatherService;
+
+  @Mock
+  private ReminderParserService reminderParserService;
 
   @InjectMocks
   private TelegramBotUpdatesListener listener;
@@ -164,15 +169,32 @@ class TelegramBotUpdatesListenerTest {
   void process_ValidReminder_ShouldSaveAndConfirm() {
     // Arrange
     Update update = createUpdate(123L, "25.12.2030 15:30 Поздравить маму");
-    when(notificationTaskService.parseAndSaveTask(123L, "25.12.2030 15:30 Поздравить маму"))
+
+    // Мокаем ReminderParserService
+    when(reminderParserService.isValidReminderFormat("25.12.2030 15:30 Поздравить маму"))
         .thenReturn(true);
+
+    ReminderParserService.ParsedReminder parsedReminder =
+        new ReminderParserService.ParsedReminder(
+            LocalDateTime.of(2030, 12, 25, 15, 30),
+            "Поздравить маму",
+            true
+        );
+
+    when(reminderParserService.parseReminder("25.12.2030 15:30 Поздравить маму"))
+        .thenReturn(parsedReminder);
+
+    when(reminderParserService.isFutureDateTime(any(LocalDateTime.class)))
+        .thenReturn(true);
+
     ArgumentCaptor<SendMessage> captor = ArgumentCaptor.forClass(SendMessage.class);
 
     // Act
     listener.process(List.of(update));
 
     // Assert
-    verify(notificationTaskService).parseAndSaveTask(123L, "25.12.2030 15:30 Поздравить маму");
+    verify(notificationTaskService).saveNotificationTask(123L, "Поздравить маму",
+        LocalDateTime.of(2030, 12, 25, 15, 30));
     verify(telegramBot).execute(captor.capture());
 
     SendMessage actualMessage = captor.getValue();
@@ -181,43 +203,88 @@ class TelegramBotUpdatesListenerTest {
   }
 
   @Test
-  void process_InvalidReminder_ShouldSendError() {
+  void process_InvalidReminderFormat_ShouldSendUnknownCommand() {
     // Arrange
-    Update update = createUpdate(123L, "25.12.2030 15:30"); // нет текста напоминания
-    when(notificationTaskService.parseAndSaveTask(123L, "25.12.2030 15:30"))
+    Update update = createUpdate(123L, "неправильный формат");
+
+    when(reminderParserService.isValidReminderFormat("неправильный формат"))
         .thenReturn(false);
+
     ArgumentCaptor<SendMessage> captor = ArgumentCaptor.forClass(SendMessage.class);
 
     // Act
     listener.process(List.of(update));
 
     // Assert
-    verify(notificationTaskService).parseAndSaveTask(123L, "25.12.2030 15:30");
-    verify(telegramBot).execute(captor.capture());
-
-    SendMessage actualMessage = captor.getValue();
-    String responseText = actualMessage.getParameters().get("text").toString();
-    assertTrue(responseText.contains("❌ Не удалось создать напоминание"));
-    assertTrue(responseText.contains("Возможные причины"));
-  }
-
-  @Test
-  void process_UnknownCommand_ShouldSendHelp() {
-    // Arrange
-    Update update = createUpdate(123L, "случайный текст");
-    ArgumentCaptor<SendMessage> captor = ArgumentCaptor.forClass(SendMessage.class);
-
-    // Act
-    listener.process(List.of(update));
-
-    // Assert
-    verify(notificationTaskService, never()).parseAndSaveTask(any(), any());
+    verify(notificationTaskService, never()).saveNotificationTask(any(), any(), any());
     verify(telegramBot).execute(captor.capture());
 
     SendMessage actualMessage = captor.getValue();
     String responseText = actualMessage.getParameters().get("text").toString();
     assertTrue(responseText.contains("Я не понял вашу команду"));
-    assertTrue(responseText.contains("напоминание в формате"));
+  }
+
+  @Test
+  void process_ValidFormatButPastDate_ShouldSendError() {
+    // Arrange
+    Update update = createUpdate(123L, "01.01.2020 15:30 Поздравить маму");
+
+    when(reminderParserService.isValidReminderFormat("01.01.2020 15:30 Поздравить маму"))
+        .thenReturn(true);
+
+    ReminderParserService.ParsedReminder parsedReminder =
+        new ReminderParserService.ParsedReminder(
+            LocalDateTime.of(2020, 1, 1, 15, 30),
+            "Поздравить маму",
+            true
+        );
+
+    when(reminderParserService.parseReminder("01.01.2020 15:30 Поздравить маму"))
+        .thenReturn(parsedReminder);
+
+    when(reminderParserService.isFutureDateTime(any(LocalDateTime.class)))
+        .thenReturn(false);
+
+    ArgumentCaptor<SendMessage> captor = ArgumentCaptor.forClass(SendMessage.class);
+
+    // Act
+    listener.process(List.of(update));
+
+    // Assert
+    verify(notificationTaskService, never()).saveNotificationTask(any(), any(), any());
+    verify(telegramBot).execute(captor.capture());
+
+    SendMessage actualMessage = captor.getValue();
+    String responseText = actualMessage.getParameters().get("text").toString();
+    assertTrue(responseText.contains("❌ Не удалось создать напоминание"));
+  }
+
+  @Test
+  void process_ParsedReminderInvalid_ShouldSendError() {
+    // Arrange
+    Update update = createUpdate(123L, "25.12.2030 15:30 Поздравить маму");
+
+    when(reminderParserService.isValidReminderFormat("25.12.2030 15:30 Поздравить маму"))
+        .thenReturn(true);
+
+    ReminderParserService.ParsedReminder parsedReminder =
+        new ReminderParserService.ParsedReminder(null, null, false);
+
+    when(reminderParserService.parseReminder("25.12.2030 15:30 Поздравить маму"))
+        .thenReturn(parsedReminder);
+
+    ArgumentCaptor<SendMessage> captor = ArgumentCaptor.forClass(SendMessage.class);
+
+    // Act
+    listener.process(List.of(update));
+
+    // Assert
+    verify(notificationTaskService, never()).saveNotificationTask(any(), any(), any());
+    verify(telegramBot).execute(captor.capture());
+
+    SendMessage actualMessage = captor.getValue();
+    String responseText = actualMessage.getParameters().get("text").toString();
+    assertTrue(responseText.contains("❌ Не удалось создать напоминание"));
   }
 
   @Test
@@ -230,7 +297,7 @@ class TelegramBotUpdatesListenerTest {
 
     // Assert
     assertEquals(-1, result);
-    verify(notificationTaskService, never()).parseAndSaveTask(any(), any());
+    verify(notificationTaskService, never()).saveNotificationTask(any(), any(), any());
   }
 
   @Test
@@ -247,4 +314,5 @@ class TelegramBotUpdatesListenerTest {
     verify(telegramBot, times(2)).execute(any(SendMessage.class));
     verify(currencyService).getUsdRate();
   }
+
 }
