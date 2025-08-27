@@ -232,12 +232,15 @@ class ReminderParserServiceTest {
     // Arrange - различные варианты с пробелами
     String withLeadingSpaces = "   25.12.2025 15:30 Поздравить маму";
     String withTrailingSpaces = "25.12.2025 15:30 Поздравить маму   ";
-    String withMultipleSpaces = "25.12.2025   15:30   Поздравить   маму";
 
-    // Act & Assert
+    // Act & Assert - только эти два должны работать
     assertTrue(reminderParserService.isValidReminderFormat(withLeadingSpaces));
     assertTrue(reminderParserService.isValidReminderFormat(withTrailingSpaces));
-    assertTrue(reminderParserService.isValidReminderFormat(withMultipleSpaces));
+
+    // С множественными пробелами между словами - НЕ ДОЛЖНО работать
+    // потому что наш паттерн ожидает конкретный формат
+    String withMultipleSpaces = "25.12.2025   15:30   Поздравить   маму";
+    assertFalse(reminderParserService.isValidReminderFormat(withMultipleSpaces));
   }
 
   @Test

@@ -16,12 +16,4 @@ public class AppConfig {
     return new RestTemplate();
   }
 
-  @Bean
-  public ObjectMapper objectMapper() {
-    ObjectMapper mapper = new ObjectMapper();
-    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-    mapper.registerModule(new JavaTimeModule());
-    return mapper;
-  }
 }
