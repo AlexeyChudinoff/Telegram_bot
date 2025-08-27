@@ -6,16 +6,15 @@ import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.Keyboard;
 import com.pengrad.telegrambot.model.request.ReplyKeyboardMarkup;
 import com.pengrad.telegrambot.request.SendMessage;
+import java.util.List;
+import java.util.regex.Pattern;
+import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import pro.sky.telegrambot.service.NotificationTaskService;
 import pro.sky.telegrambot.service.CurrencyService;
+import pro.sky.telegrambot.service.NotificationTaskService;
 import pro.sky.telegrambot.service.WeatherService;
-
-import javax.annotation.PostConstruct;
-import java.util.List;
-import java.util.regex.Pattern;
 
 @Service
 public class TelegramBotUpdatesListener implements UpdatesListener {

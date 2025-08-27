@@ -24,7 +24,9 @@ public class WeatherService {
   public String getTomskWeather() {
     try {
       String apiKey = apiService.getApiKey();
-      String url = "https://api.openweathermap.org/data/2.5/weather?q=Tomsk&units=metric&lang=ru&appid=" + apiKey;
+      String url =
+          "https://api.openweathermap.org/data/2.5/weather?q=Tomsk&units=metric&lang=ru&appid="
+              + apiKey;
 
       String jsonResponse = restTemplate.getForObject(url, String.class);
 
