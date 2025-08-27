@@ -38,47 +38,12 @@ class NotificationTaskServiceTest {
   @InjectMocks
   private NotificationTaskService notificationTaskService;
 
-  @Test
-  void testParseAndSaveTaskValidFormat() {
-    // Arrange
-    Long chatId = 123L;
-    String validText = "25.12.2125 15:30 Поздравить маму";
+  // УДАЛЯЕМ тесты парсинга, так как эта логика теперь в ReminderParserService
+  // @Test
+  // void testParseAndSaveTaskValidFormat() { ... }
 
-    // Act
-    boolean result = notificationTaskService.parseAndSaveTask(chatId, validText);
-
-    // Assert
-    assertTrue(result, "Парсинг должен быть успешным для: " + validText);
-    verify(notificationTaskRepository, times(1)).save(any(NotificationTask.class));
-  }
-
-  @Test
-  void testParseAndSaveTaskInvalidFormat() {
-    // Arrange
-    Long chatId = 123L;
-    String invalidText = "неправильный формат";
-
-    // Act
-    boolean result = notificationTaskService.parseAndSaveTask(chatId, invalidText);
-
-    // Assert
-    assertFalse(result);
-    verify(notificationTaskRepository, never()).save(any(NotificationTask.class));
-  }
-
-  @Test
-  void testParseAndSaveTaskPastDate() {
-    // Arrange
-    Long chatId = 123L;
-    String pastDateText = "01.01.2020 15:30 Поздравить маму";
-
-    // Act
-    boolean result = notificationTaskService.parseAndSaveTask(chatId, pastDateText);
-
-    // Assert
-    assertFalse(result);
-    verify(notificationTaskRepository, never()).save(any(NotificationTask.class));
-  }
+  // @Test
+  // void testParseAndSaveTaskInvalidFormat() { ... }
 
   @Test
   void testCheckNotifications() {
@@ -128,5 +93,16 @@ class NotificationTaskServiceTest {
     assertEquals(message, savedTask.getMessage());
     assertEquals(dateTime, savedTask.getNotificationDateTime());
     assertFalse(savedTask.isSent());
+  }
+
+  // ДОБАВЛЯЕМ тест для cleanup
+  @Test
+  void testCleanupOldNotifications() {
+    // Act
+    notificationTaskService.cleanupOldNotifications();
+
+    // Assert - проверяем что методы репозитория вызываются
+    verify(notificationTaskRepository).deleteBySentTrueAndSentDateTimeBefore(any(LocalDateTime.class));
+    verify(notificationTaskRepository).deleteBySentFalseAndNotificationDateTimeBefore(any(LocalDateTime.class));
   }
 }
