@@ -2,20 +2,20 @@ package pro.sky.telegrambot.service;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.request.SendMessage;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-import pro.sky.telegrambot.model.NotificationTask;
-import pro.sky.telegrambot.repository.NotificationTaskRepository;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import pro.sky.telegrambot.model.NotificationTask;
+import pro.sky.telegrambot.repository.NotificationTaskRepository;
 
 @Service
 public class NotificationTaskService {
+
   private final NotificationTaskRepository notificationTaskRepository;
   private final TelegramBot telegramBot;
 
@@ -25,7 +25,8 @@ public class NotificationTaskService {
     this.telegramBot = telegramBot;
   }
 
-  public void saveNotificationTask(Long chatId, String message, LocalDateTime notificationDateTime) {
+  public void saveNotificationTask(Long chatId, String message,
+      LocalDateTime notificationDateTime) {
     NotificationTask notificationTask = new NotificationTask();
     notificationTask.setChatId(chatId);
     notificationTask.setMessage(message);
@@ -42,7 +43,8 @@ public class NotificationTaskService {
         .findByNotificationDateTime(currentDateTime);
 
     for (NotificationTask task : tasks) {
-      SendMessage sendMessage = new SendMessage(task.getChatId(), "🔔 Напоминание:\n" + task.getMessage())
+      SendMessage sendMessage = new SendMessage(task.getChatId(),
+          "🔔 Напоминание:\n" + task.getMessage())
           .disableWebPagePreview(true);
       telegramBot.execute(sendMessage);
 
