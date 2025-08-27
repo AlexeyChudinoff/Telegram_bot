@@ -1,9 +1,19 @@
 package pro.sky.telegrambot;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.request.SendMessage;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -13,15 +23,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
 import pro.sky.telegrambot.model.NotificationTask;
 import pro.sky.telegrambot.repository.NotificationTaskRepository;
-
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
 import pro.sky.telegrambot.service.NotificationTaskService;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 @ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
 class NotificationTaskServiceTest {
@@ -35,33 +38,12 @@ class NotificationTaskServiceTest {
   @InjectMocks
   private NotificationTaskService notificationTaskService;
 
-  @Test
-  void testParseAndSaveTaskValidFormat() {
-    // Arrange
-    Long chatId = 123L;
-    String validText = "25.12.2125 15:30 Поздравить маму";
+  // УДАЛЯЕМ тесты парсинга, так как эта логика теперь в ReminderParserService
+  // @Test
+  // void testParseAndSaveTaskValidFormat() { ... }
 
-    // Act
-    boolean result = notificationTaskService.parseAndSaveTask(chatId, validText);
-
-    // Assert
-    assertTrue(result, "Парсинг должен быть успешным для: " + validText);
-    verify(notificationTaskRepository, times(1)).save(any(NotificationTask.class));
-  }
-
-  @Test
-  void testParseAndSaveTaskInvalidFormat() {
-    // Arrange
-    Long chatId = 123L;
-    String invalidText = "неправильный формат";
-
-    // Act
-    boolean result = notificationTaskService.parseAndSaveTask(chatId, invalidText);
-
-    // Assert
-    assertFalse(result);
-    verify(notificationTaskRepository, never()).save(any(NotificationTask.class));
-  }
+  // @Test
+  // void testParseAndSaveTaskInvalidFormat() { ... }
 
   @Test
   void testCheckNotifications() {
@@ -71,15 +53,17 @@ class NotificationTaskServiceTest {
     task1.setChatId(123L);
     task1.setMessage("Тестовое напоминание 1");
     task1.setNotificationDateTime(now);
+    task1.setSent(false);
 
     NotificationTask task2 = new NotificationTask();
     task2.setChatId(456L);
     task2.setMessage("Тестовое напоминание 2");
     task2.setNotificationDateTime(now);
+    task2.setSent(false);
 
     List<NotificationTask> tasks = Arrays.asList(task1, task2);
 
-    when(notificationTaskRepository.findByNotificationDateTime(now))
+    when(notificationTaskRepository.findByNotificationDateTimeAndSentFalse(now))
         .thenReturn(tasks);
 
     // Act
@@ -87,6 +71,7 @@ class NotificationTaskServiceTest {
 
     // Assert
     verify(telegramBot, times(2)).execute(any(SendMessage.class));
+    verify(notificationTaskRepository, times(2)).save(any(NotificationTask.class));
   }
 
   @Test
@@ -107,5 +92,17 @@ class NotificationTaskServiceTest {
     assertEquals(chatId, savedTask.getChatId());
     assertEquals(message, savedTask.getMessage());
     assertEquals(dateTime, savedTask.getNotificationDateTime());
+    assertFalse(savedTask.isSent());
+  }
+
+  // ДОБАВЛЯЕМ тест для cleanup
+  @Test
+  void testCleanupOldNotifications() {
+    // Act
+    notificationTaskService.cleanupOldNotifications();
+
+    // Assert - проверяем что методы репозитория вызываются
+    verify(notificationTaskRepository).deleteBySentTrueAndSentDateTimeBefore(any(LocalDateTime.class));
+    verify(notificationTaskRepository).deleteBySentFalseAndNotificationDateTimeBefore(any(LocalDateTime.class));
   }
 }
