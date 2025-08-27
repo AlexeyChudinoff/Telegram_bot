@@ -67,6 +67,20 @@ class NotificationTaskServiceTest {
   }
 
   @Test
+  void testParseAndSaveTaskPastDate() {
+    // Arrange
+    Long chatId = 123L;
+    String pastDateText = "01.01.2020 15:30 Поздравить маму";
+
+    // Act
+    boolean result = notificationTaskService.parseAndSaveTask(chatId, pastDateText);
+
+    // Assert
+    assertFalse(result);
+    verify(notificationTaskRepository, never()).save(any(NotificationTask.class));
+  }
+
+  @Test
   void testCheckNotifications() {
     // Arrange
     LocalDateTime now = LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.MINUTES);
@@ -74,15 +88,17 @@ class NotificationTaskServiceTest {
     task1.setChatId(123L);
     task1.setMessage("Тестовое напоминание 1");
     task1.setNotificationDateTime(now);
+    task1.setSent(false);
 
     NotificationTask task2 = new NotificationTask();
     task2.setChatId(456L);
     task2.setMessage("Тестовое напоминание 2");
     task2.setNotificationDateTime(now);
+    task2.setSent(false);
 
     List<NotificationTask> tasks = Arrays.asList(task1, task2);
 
-    when(notificationTaskRepository.findByNotificationDateTime(now))
+    when(notificationTaskRepository.findByNotificationDateTimeAndSentFalse(now))
         .thenReturn(tasks);
 
     // Act
@@ -90,6 +106,7 @@ class NotificationTaskServiceTest {
 
     // Assert
     verify(telegramBot, times(2)).execute(any(SendMessage.class));
+    verify(notificationTaskRepository, times(2)).save(any(NotificationTask.class));
   }
 
   @Test
@@ -110,5 +127,6 @@ class NotificationTaskServiceTest {
     assertEquals(chatId, savedTask.getChatId());
     assertEquals(message, savedTask.getMessage());
     assertEquals(dateTime, savedTask.getNotificationDateTime());
+    assertFalse(savedTask.isSent());
   }
 }
