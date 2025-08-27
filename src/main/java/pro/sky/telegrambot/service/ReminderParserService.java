@@ -17,49 +17,45 @@ public class ReminderParserService {
       Pattern.compile("(\\d{2}\\.\\d{2}\\.\\d{4} \\d{2}:\\d{2}) (.+)");
 
   public boolean isValidReminderFormat(String text) {
-    if (text == null) {
-      logger.debug("isValidReminderFormat: текст null");
+    if (text == null || text.trim().isEmpty()) {
       return false;
     }
-    String trimmed = text.trim();
-    if (trimmed.isEmpty()) {
-      logger.debug("isValidReminderFormat: текст пустой после обрезки пробелов");
-      return false;
-    }
-    boolean matches = REMINDER_PATTERN.matcher(trimmed).matches();
-    logger.debug("isValidReminderFormat: проверка '{}', результат: {}", trimmed, matches);
-    return matches;
+    return REMINDER_PATTERN.matcher(text.trim()).matches();
   }
 
   public ParsedReminder parseReminder(String text) {
-    if (text == null || text.trim().isEmpty()) {
-      logger.debug("parseReminder: входной текст пустой или null");
-      return new ParsedReminder(null, null, false);
-    }
     try {
+      if (text == null) {
+        return new ParsedReminder(null, null, false);
+      }
+
       String trimmedText = text.trim();
-      logger.debug("parseReminder: анализ текста '{}'", trimmedText);
+      if (trimmedText.isEmpty()) {
+        return new ParsedReminder(null, null, false);
+      }
+
       Matcher matcher = REMINDER_PATTERN.matcher(trimmedText);
+
       if (matcher.matches()) {
         String dateTimeString = matcher.group(1);
         String message = matcher.group(2);
+
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
         LocalDateTime dateTime = LocalDateTime.parse(dateTimeString, formatter);
-        logger.debug("parseReminder: успешно распарсено время '{}' и сообщение '{}'", dateTime, message);
+
         return new ParsedReminder(dateTime, message, true);
-      } else {
-        logger.debug("parseReminder: формат не совпадает с паттерном");
-        return new ParsedReminder(null, null, false);
       }
+      return new ParsedReminder(null, null, false);
     } catch (Exception e) {
       logger.error("Error parsing reminder: {}", text, e);
       return new ParsedReminder(null, null, false);
     }
   }
 
-
-
   public boolean isFutureDateTime(LocalDateTime dateTime) {
+    if (dateTime == null) {
+      return false;
+    }
     return !dateTime.isBefore(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES));
   }
 

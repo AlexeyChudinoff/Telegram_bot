@@ -2,9 +2,10 @@ package pro.sky.telegrambot.configuration;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.DeleteMyCommands;
-import java.text.SimpleDateFormat;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,9 +28,10 @@ public class TelegramBotConfiguration {
     ObjectMapper mapper = new ObjectMapper();
     // Отключение проверки на отсутствие полей, API погоды может добавлять новые поля, а приложение продолжит работать
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    // Установка формата даты и времени, чтобы не было ошибок при парсинге даты
-    mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"));
+    // Включение записи дат как строк вместо timestamp
+    mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+    // Регистрация модуля для работы с Java 8 Date/Time API
+    mapper.registerModule(new JavaTimeModule());
     return mapper;
   }
-
 }
