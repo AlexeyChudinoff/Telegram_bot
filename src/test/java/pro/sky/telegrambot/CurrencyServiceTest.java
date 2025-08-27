@@ -15,7 +15,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestTemplate;
 import pro.sky.telegrambot.service.CurrencyService;
 
-@ActiveProfiles("test") // ✅ Оставляем для интеграционных тестов
+@ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
 class CurrencyServiceTest {
 

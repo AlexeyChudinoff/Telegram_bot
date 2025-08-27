@@ -7,13 +7,13 @@ import com.pengrad.telegrambot.model.request.Keyboard;
 import com.pengrad.telegrambot.model.request.ReplyKeyboardMarkup;
 import com.pengrad.telegrambot.request.SendMessage;
 import java.util.List;
-import java.util.regex.Pattern;
 import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import pro.sky.telegrambot.service.CurrencyService;
 import pro.sky.telegrambot.service.NotificationTaskService;
+import pro.sky.telegrambot.service.ReminderParserService;
 import pro.sky.telegrambot.service.WeatherService;
 
 @Service
@@ -24,19 +24,18 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
   private final NotificationTaskService notificationTaskService;
   private final CurrencyService currencyService;
   private final WeatherService weatherService;
-
-  // Паттерн для проверки формата напоминания
-  private static final Pattern REMINDER_PATTERN =
-      Pattern.compile("\\d{2}\\.\\d{2}\\.\\d{4} \\d{2}:\\d{2} .+");
+  private final ReminderParserService reminderParserService;
 
   public TelegramBotUpdatesListener(TelegramBot telegramBot,
       NotificationTaskService notificationTaskService,
       CurrencyService currencyService,
-      WeatherService weatherService) {
+      WeatherService weatherService,
+      ReminderParserService reminderParserService) {
     this.telegramBot = telegramBot;
     this.notificationTaskService = notificationTaskService;
     this.currencyService = currencyService;
     this.weatherService = weatherService;
+    this.reminderParserService = reminderParserService;
   }
 
   @PostConstruct
@@ -54,36 +53,45 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
   @Override
   public int process(List<Update> updates) {
-    updates.forEach(update -> {
-      if (update.message() != null && update.message().text() != null) {
-        Long chatId = update.message().chat().id();
-        String text = update.message().text().trim();
+    try {
+      updates.forEach(update -> {
+        if (update.message() != null && update.message().text() != null) {
+          Long chatId = update.message().chat().id();
+          String text = update.message().text().trim();
 
-        logger.info("Received message from chat {}: {}", chatId, text);
+          logger.info("Received message from chat {}: {}", chatId, text);
 
-        switch (text) {
-          case "/start":
-            sendWelcomeMessage(chatId);
-            break;
-          case "⏰ Создать напоминание":
-            sendReminderInstructions(chatId);
-            break;
-          case "💵 Курс доллара":
-            sendCurrencyRate(chatId);
-            break;
-          case "🌤️ Погода в Томске":
-            sendWeather(chatId);
-            break;
-          case "❓ Помощь":
-            sendHelp(chatId);
-            break;
-          default:
-            processReminder(chatId, text);
-            break;
+          if (text.isEmpty()) {
+            return;
+          }
+
+          switch (text) {
+            case "/start":
+              sendWelcomeMessage(chatId);
+              break;
+            case "⏰ Создать напоминание":
+              sendReminderInstructions(chatId);
+              break;
+            case "💵 Курс доллара":
+              sendCurrencyRate(chatId);
+              break;
+            case "🌤️ Погода в Томске":
+              sendWeather(chatId);
+              break;
+            case "❓ Помощь":
+              sendHelp(chatId);
+              break;
+            default:
+              processReminder(chatId, text);
+              break;
+          }
         }
-      }
-    });
-    return UpdatesListener.CONFIRMED_UPDATES_ALL;
+      });
+      return UpdatesListener.CONFIRMED_UPDATES_ALL;
+    } catch (Exception e) {
+      logger.error("Error processing updates", e);
+      return UpdatesListener.CONFIRMED_UPDATES_ALL;
+    }
   }
 
   private void sendWelcomeMessage(Long chatId) {
@@ -116,7 +124,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
       String rate = currencyService.getUsdRate();
       sendMessage(chatId, rate);
     } catch (Exception e) {
-      logger.error("Error getting currency rate", e);
+      logger.error("Error getting currency rate for chat: {}", chatId, e);
       sendMessage(chatId, "❌ Не удалось получить курс доллара. Попробуйте позже.");
     }
   }
@@ -126,7 +134,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
       String weather = weatherService.getTomskWeather();
       sendMessage(chatId, weather);
     } catch (Exception e) {
-      logger.error("Error getting weather", e);
+      logger.error("Error getting weather for chat: {}", chatId, e);
       sendMessage(chatId, "❌ Не удалось получить погоду. Попробуйте позже.");
     }
   }
@@ -148,24 +156,18 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
   }
 
   private void processReminder(Long chatId, String text) {
-    // Проверяем, похоже ли сообщение на напоминание
-    if (isPotentialReminder(text)) {
-      if (notificationTaskService.parseAndSaveTask(chatId, text)) {
-        sendMessage(chatId, "✅ Напоминание успешно создано!\n" +
-            "Я напомню вам в указанное время.");
+    if (reminderParserService.isValidReminderFormat(text)) {
+      ReminderParserService.ParsedReminder parsed = reminderParserService.parseReminder(text);
+
+      if (parsed.isValid() && reminderParserService.isFutureDateTime(parsed.getDateTime())) {
+        notificationTaskService.saveNotificationTask(chatId, parsed.getMessage(), parsed.getDateTime());
+        sendMessage(chatId, "✅ Напоминание успешно создано!\nЯ напомню вам в указанное время.");
       } else {
         sendReminderError(chatId, text);
       }
     } else {
-      // Если не похоже на напоминание, показываем подсказку
       sendUnknownCommand(chatId);
     }
-  }
-
-  private boolean isPotentialReminder(String text) {
-    // Проверяем, содержит ли текст дату и время в начале
-    return REMINDER_PATTERN.matcher(text).matches() ||
-        text.matches("\\d{1,2}\\.\\d{1,2}\\.\\d{4} .+");
   }
 
   private void sendReminderError(Long chatId, String text) {

@@ -13,12 +13,19 @@
 # ================================
 # Maven
 target/
+**/target/
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
 pom.xml.next
 release.properties
 maven-site.xml
+
+# Gradle
+.gradle/
+build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
 
 # ================================
 # IDE
@@ -39,18 +46,41 @@ bin/
 # VS Code
 .vscode/
 
+# NetBeans
+nbproject/
+private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
 # ================================
 # Logs
 # ================================
 *.log
 logs/
 **/logs/
+**/*.log.*
 
 # ================================
 # Database
 # ================================
 # H2 (если используется для тестов)
 *.h2.db
+*.mv.db
+
+# HSQLDB
+*.script
+*.properties
+*.data
+
+# Derby
+derby.log
+
+# SQLite
+*.sqlite
+*.db
 
 # ================================
 # OS generated files
@@ -63,6 +93,9 @@ logs/
 ehthumbs.db
 Thumbs.db
 
+# Windows
+Desktop.ini
+
 # ================================
 # Environment variables and secrets
 # ================================
@@ -70,16 +103,21 @@ Thumbs.db
 .env.local
 .env.development.local
 .env.test.local
+.env.production.local
 
 # Но НЕ игнорируем пример!
 !.env.example
 
-#==================================
+# ================================
 # Application properties with secrets
+# ================================
 application-secret.properties
 application-*.properties
+**/application-*.properties
 
-#==================================
+# Исключаем стандартные примеры
+!application.properties
+!application.yml
 
 # ================================
 # Application properties (опционально - для дополнительных профилей)
@@ -87,6 +125,7 @@ application-*.properties
 application-dev.properties
 application-prod.properties
 application-test.properties
+application-local.properties
 
 # ================================
 # Temporary files
@@ -105,11 +144,47 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.yarn/
+.yarnrc.yml
+.pnp.*
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
 
 # ================================
-# Gradle (если перейдете на Gradle)
+# Coverage reports
 # ================================
-.gradle/
-build/
-!gradle/wrapper/gradle-wrapper.jar
-/target/
+**/jacoco.exec
+**/jacoco-it.exec
+**/coverage/
+**/site/jacoco/
+
+# ================================
+# Checkstyle/PMD/FindBugs reports
+# ================================
+**/checkstyle-result.xml
+**/pmd.xml
+**/findbugs.xml
+
+# ================================
+# Docker
+# ================================
+docker-compose.override.yml
+
+# ================================
+# Documentation
+# ================================
+**/apidocs/
+**/test-output/
+
+# ================================
+# Project specific exclusions
+# ================================
+# Исключения для конкретных файлов/папок проекта
+# !src/main/resources/important-file.txt
+
+# ================================
+# Git
+# ================================
+# Автоматически создаваемые файлы Git
+**/.gitkeep

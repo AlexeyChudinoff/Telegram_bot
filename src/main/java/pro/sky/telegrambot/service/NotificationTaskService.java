@@ -8,6 +8,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import pro.sky.telegrambot.model.NotificationTask;
@@ -16,6 +18,7 @@ import pro.sky.telegrambot.repository.NotificationTaskRepository;
 @Service
 public class NotificationTaskService {
 
+  private static final Logger logger = LoggerFactory.getLogger(NotificationTaskService.class);
   private final NotificationTaskRepository notificationTaskRepository;
   private final TelegramBot telegramBot;
 
@@ -33,69 +36,81 @@ public class NotificationTaskService {
     notificationTask.setNotificationDateTime(notificationDateTime);
     notificationTask.setSent(false);
     notificationTaskRepository.save(notificationTask);
+
+    logger.info("Saved notification for chat {} at {}", chatId, notificationDateTime);
   }
 
   @Scheduled(cron = "0 * * * * *") // Проверка каждую минуту
   public void checkNotifications() {
     LocalDateTime currentDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
 
-    List<NotificationTask> tasks = notificationTaskRepository
-        .findByNotificationDateTime(currentDateTime);
+    try {
+      List<NotificationTask> tasks = notificationTaskRepository
+          .findByNotificationDateTimeAndSentFalse(currentDateTime);
 
-    for (NotificationTask task : tasks) {
-      SendMessage sendMessage = new SendMessage(task.getChatId(),
-          "🔔 Напоминание:\n" + task.getMessage())
-          .disableWebPagePreview(true);
-      telegramBot.execute(sendMessage);
+      for (NotificationTask task : tasks) {
+        SendMessage sendMessage = new SendMessage(task.getChatId(),
+            "🔔 Напоминание:\n" + task.getMessage())
+            .disableWebPagePreview(true);
+        telegramBot.execute(sendMessage);
 
-      // Помечаем как отправленное и сохраняем время отправки
-      task.setSent(true);
-      task.setSentDateTime(LocalDateTime.now());
-      notificationTaskRepository.save(task);
+        // Помечаем как отправленное и сохраняем время отправки
+        task.setSent(true);
+        task.setSentDateTime(LocalDateTime.now());
+        notificationTaskRepository.save(task);
+
+        logger.info("Sent notification to chat {}: {}", task.getChatId(), task.getMessage());
+      }
+    } catch (Exception e) {
+      logger.error("Error checking notifications", e);
     }
   }
 
-  //для очистки старых напоминаний
+  // Очистка старых напоминаний
   @Scheduled(cron = "0 0 3 * * *") // Каждый день в 3:00
   public void cleanupOldNotifications() {
-    LocalDateTime twentyFourHoursAgo = LocalDateTime.now().minusHours(24);
+    try {
+      LocalDateTime twentyFourHoursAgo = LocalDateTime.now().minusHours(24);
 
-    // Удаляем отправленные напоминания старше 24 часов
-    notificationTaskRepository.deleteBySentTrueAndSentDateTimeBefore(twentyFourHoursAgo);
+      // Удаляем отправленные напоминания старше 24 часов
+      int deletedSent = notificationTaskRepository.deleteBySentTrueAndSentDateTimeBefore(twentyFourHoursAgo);
 
-    // Удаляем неотправленные напоминания из прошлого
-    notificationTaskRepository.deleteBySentFalseAndNotificationDateTimeBefore(LocalDateTime.now());
+      // Удаляем неотправленные напоминания из прошлого
+      int deletedUnsent = notificationTaskRepository.deleteBySentFalseAndNotificationDateTimeBefore(LocalDateTime.now());
+
+      logger.info("Cleanup completed: deleted {} sent and {} unsent notifications",
+          deletedSent, deletedUnsent);
+    } catch (Exception e) {
+      logger.error("Error cleaning up old notifications", e);
+    }
   }
 
   public boolean parseAndSaveTask(Long chatId, String text) {
-    String trimmedText = text.trim();
-    Pattern pattern = Pattern.compile("(\\d{2}\\.\\d{2}\\.\\d{4} \\d{2}:\\d{2}) (.+)");
-    Matcher matcher = pattern.matcher(trimmedText);
+    try {
+      String trimmedText = text.trim();
+      Pattern pattern = Pattern.compile("(\\d{2}\\.\\d{2}\\.\\d{4} \\d{2}:\\d{2}) (.+)");
+      Matcher matcher = pattern.matcher(trimmedText);
 
-    // отладка, в тесте дублировался matcher
-    System.out.println("Text for parsing: '" + trimmedText + "'");
-    boolean matches = matcher.matches();
-    System.out.println("Service matches: " + matches);
+      if (matcher.matches()) {
+        String dateTimeString = matcher.group(1);
+        String message = matcher.group(2);
 
-    if (matches) {
-      String dateTimeString = matcher.group(1);
-      String message = matcher.group(2);
-      System.out.println("Parsed datetime: " + dateTimeString);
-      System.out.println("Parsed message: " + message);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+        LocalDateTime dateTime = LocalDateTime.parse(dateTimeString, formatter);
 
-      DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
-      LocalDateTime dateTime = LocalDateTime.parse(dateTimeString, formatter);
-      System.out.println("Parsed LocalDateTime: " + dateTime);
+        // Проверяем, что дата не в прошлом (с точностью до минут)
+        if (dateTime.isBefore(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES))) {
+          logger.warn("Attempt to create reminder in past: {} for chat {}", dateTime, chatId);
+          return false;
+        }
 
-      // Проверяем, что дата не в прошлом
-      if (dateTime.isBefore(LocalDateTime.now())) {
-        System.out.println("Date is in the past!");
-        return false;
+        saveNotificationTask(chatId, message, dateTime);
+        return true;
       }
-
-      saveNotificationTask(chatId, message, dateTime);
-      return true;
+      return false;
+    } catch (Exception e) {
+      logger.error("Error parsing reminder for chat {}: {}", chatId, text, e);
+      return false;
     }
-    return false;
   }
-}//
+}
