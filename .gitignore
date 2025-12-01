@@ -104,3 +104,4 @@ yarn-error.log*
 .gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
+.env_custom
